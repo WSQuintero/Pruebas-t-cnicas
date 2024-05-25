@@ -4,13 +4,33 @@ import TaskForm from './components/TaskForm'
 import TaskList from './components/TaskList'
 import { GeneralContext } from './context/GeneralContext'
 import TaskSearch from './components/TaskSearch'
+import { DataTasks } from './services/Tasks.service'
 
 function App() {
-  const { setTaskList } = useContext(GeneralContext)
+  const { setTaskList, $Tasks } = useContext(GeneralContext)
+
+  const getTasks = async () => {
+    const lsTasks = JSON.parse(String(localStorage.getItem('taskList'))) || []
+    const { status, data } = await $Tasks.getTasks()
+
+    if (status) {
+      const finalData = ((await data) as DataTasks[])
+        .map((task) => ({ task: task.title, ...task }))
+        .slice(0, 5)
+      if (
+        !lsTasks.some((task: { task: string; completed: boolean }) =>
+          finalData.some((tas) => tas.task.includes(task.task))
+        )
+      ) {
+        setTaskList([...lsTasks, ...finalData])
+      } else {
+        setTaskList([...lsTasks])
+      }
+    }
+  }
 
   useEffect(() => {
-    const lsTasks = JSON.parse(String(localStorage.getItem('taskList')))
-    setTaskList(lsTasks)
+    getTasks()
   }, [])
 
   return (
